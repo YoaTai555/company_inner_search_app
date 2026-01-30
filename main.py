@@ -95,6 +95,7 @@ chat_message = st.chat_input(ct.CHAT_INPUT_HELPER_TEXT)
 # 7. チャット送信時の処理
 ############################################################
 if chat_message:
+    print(f"【DEBUG】:_/_/_/ 7. チャット送信時の処理 _/_/_")
     # ==========================================
     # 7-1. ユーザーメッセージの表示
     # ==========================================
@@ -108,6 +109,7 @@ if chat_message:
     # ==========================================
     # 7-2. LLMからの回答取得
     # ==========================================
+    print(f"【DEBUG】:_/_/_/ 7-2. LLMからの回答取得 _/_/_")
     # 「st.spinner」でグルグル回っている間、表示の不具合が発生しないよう空のエリアを表示
     res_box = st.empty()
     # LLMによる回答生成（回答生成が完了するまでグルグル回す）
@@ -115,6 +117,17 @@ if chat_message:
         try:
             # 画面読み込み時に作成したRetrieverを使い、Chainを実行
             llm_response = utils.get_llm_response(chat_message)
+
+            for data in llm_response['context']:
+                print(f"【DEBUG】------------------------------")
+                print(f"【DEBUG】llm_response < chat_message> :{chat_message}")
+                print(f"【DEBUG】llm_response < source> :{data.metadata['source']}")
+                if 'page' in data.metadata:
+                    print(f"【DEBUG】llm_response < page> :{data.metadata['page']}")
+                else:
+                    print(f"【DEBUG】llm_response < page> :N/A")
+                print(f"【DEBUG】llm_response < page_content> :{data.page_content[1:]}...")
+
         except Exception as e:
             # エラーログの出力
             logger.error(f"{ct.GET_LLM_RESPONSE_ERROR_MESSAGE}\n{e}")
@@ -132,6 +145,7 @@ if chat_message:
             # モードが「社内文書検索」の場合
             # ==========================================
             if st.session_state.mode == ct.ANSWER_MODE_1:
+                print(f"【DEBUG】:_/_/_/ モードが「社内文書検索」の場合 _/_/_")
                 # 入力内容と関連性が高い社内文書のありかを表示
                 content = cn.display_search_llm_response(llm_response)
 
@@ -139,8 +153,13 @@ if chat_message:
             # モードが「社内問い合わせ」の場合
             # ==========================================
             elif st.session_state.mode == ct.ANSWER_MODE_2:
+                print(f"【DEBUG】:_/_/_/ モードが「社内問い合わせ」の場合 _/_/_")
                 # 入力に対しての回答と、参照した文書のありかを表示
                 content = cn.display_contact_llm_response(llm_response)
+                if 'file_info_list' in content:
+                    print(f"【DEBUG】file_info_list:{content['file_info_list']}")
+                else:
+                    print(f"【DEBUG】file_info_list:N/A")
             
             # AIメッセージのログ出力
             logger.info({"message": content, "application_mode": st.session_state.mode})

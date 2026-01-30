@@ -54,7 +54,8 @@ RAG_TOP_FOLDER_PATH = "./data"
 SUPPORTED_EXTENSIONS = {
     ".pdf": PyMuPDFLoader,
     ".docx": Docx2txtLoader,
-    ".csv": lambda path: CSVLoader(path, encoding="utf-8")
+    ".csv": lambda path: CSVLoader(path, encoding="utf-8"),
+    ".txt": TextLoader
 }
 WEB_URL_LOAD_TARGETS = [
     "https://generative-ai.web-camp.io/"
@@ -100,6 +101,7 @@ SYSTEM_PROMPT_INQUIRY = """
 # ==========================================
 INQUIRY_NO_MATCH_ANSWER = "回答に必要な情報が見つかりませんでした。"
 NO_DOC_MATCH_ANSWER = "該当資料なし"
+NO_DOC_MATCH_WARNING = "⚠︎ 完全一致ではなくワードにヒットした可能性がある情報です。"
 
 
 # ==========================================

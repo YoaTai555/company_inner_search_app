@@ -121,7 +121,11 @@ def display_conversation_log():
                         icon = utils.get_source_icon(message['content']['main_file_path'])
                         # 参照元ドキュメントのページ番号が取得できた場合にのみ、ページ番号を表示
                         if "main_page_number" in message["content"]:
-                            st.success(f"{message['content']['main_file_path']}", icon=icon)
+                            if message['content']['main_page_number'] != 0:
+                                st.success(f"{message['content']['main_file_path']} (ページNo.{message['content']['main_page_number']})", icon=icon)
+                            else:
+                                # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
+                                st.success(f"{message['content']['main_file_path']} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
                         else:
                             st.success(f"{message['content']['main_file_path']}", icon=icon)
                         
@@ -138,7 +142,11 @@ def display_conversation_log():
                                 icon = utils.get_source_icon(sub_choice['source'])
                                 # 参照元ドキュメントのページ番号が取得できた場合にのみ、ページ番号を表示
                                 if "page_number" in sub_choice:
-                                    st.info(f"{sub_choice['source']}", icon=icon)
+                                    if sub_choice['page_number'] != 0:
+                                        st.info(f"{sub_choice['source']} (ページNo.{sub_choice['page_number']})", icon=icon)
+                                    else:
+                                        # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
+                                        st.info(f"{sub_choice['source']} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
                                 else:
                                     st.info(f"{sub_choice['source']}", icon=icon)
                     # ファイルのありかの情報が取得できなかった場合、LLMからの回答のみ表示
@@ -175,6 +183,7 @@ def display_search_llm_response(llm_response):
     """
     # LLMからのレスポンスに参照元情報が入っており、かつ「該当資料なし」が回答として返された場合
     if llm_response["context"] and llm_response["answer"] != ct.NO_DOC_MATCH_ANSWER:
+        print(f"【DEBUG】:_/_/_/ if処理：LLMからのレスポンスに参照元情報が入っており、... _/_/_")
 
         # ==========================================
         # ユーザー入力値と最も関連性が高いメインドキュメントのありかを表示
@@ -193,7 +202,11 @@ def display_search_llm_response(llm_response):
             # ページ番号を取得
             main_page_number = llm_response["context"][0].metadata["page"]
             # 「メインドキュメントのファイルパス」と「ページ番号」を表示
-            st.success(f"{main_file_path}", icon=icon)
+            if main_page_number != 0:
+                st.success(f"{main_file_path} (ページNo.{main_page_number})", icon=icon)
+            else:
+                # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
+                st.success(f"{main_file_path} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
         else:
             # 「メインドキュメントのファイルパス」を表示
             st.success(f"{main_file_path}", icon=icon)
@@ -249,7 +262,11 @@ def display_search_llm_response(llm_response):
                 # ページ番号が取得できない場合のための分岐処理
                 if "page_number" in sub_choice:
                     # 「サブドキュメントのファイルパス」と「ページ番号」を表示
-                    st.info(f"{sub_choice['source']}", icon=icon)
+                    if sub_choice['page_number'] != 0:
+                        st.info(f"{sub_choice['source']} (ページNo.{sub_choice['page_number']})", icon=icon)
+                    else:
+                        # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
+                        st.info(f"{sub_choice['source']} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
                 else:
                     # 「サブドキュメントのファイルパス」を表示
                     st.info(f"{sub_choice['source']}", icon=icon)
@@ -275,6 +292,7 @@ def display_search_llm_response(llm_response):
     
     # LLMからのレスポンスに、ユーザー入力値と関連性の高いドキュメント情報が入って「いない」場合
     else:
+        print(f"【DEBUG】:_/_/_/ else処理：LLMからのレスポンスに参照元情報が入っており、... _/_/_")
         # 関連ドキュメントが取得できなかった場合のメッセージ表示
         st.markdown(ct.NO_DOC_MATCH_MESSAGE)
 
@@ -318,6 +336,8 @@ def display_contact_llm_response(llm_response):
 
         # LLMが回答生成の参照元として使ったドキュメントの一覧が「context」内のリストの中に入っているため、ループ処理
         for document in llm_response["context"]:
+            # ページ番号の変数追加
+            page_number = 0
             # ファイルパスを取得
             file_path = document.metadata["source"]
             # ファイルパスの重複は除去
@@ -329,7 +349,11 @@ def display_contact_llm_response(llm_response):
                 # ページ番号を取得
                 page_number = document.metadata["page"]
                 # 「ファイルパス」と「ページ番号」
-                file_info = f"{file_path}"
+                if page_number != 0:
+                    file_info = f"{file_path} (ページNo.{page_number})"
+                else:
+                    # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
+                    file_info = f"{file_path} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})"
             else:
                 # 「ファイルパス」のみ
                 file_info = f"{file_path}"
