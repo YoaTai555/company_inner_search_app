@@ -14,6 +14,7 @@ import unicodedata
 from dotenv import load_dotenv
 import streamlit as st
 from docx import Document
+from langchain_core.documents import Document
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -82,7 +83,8 @@ def initialize_logger():
     log_handler.setFormatter(formatter)
 
     # ログレベルを「INFO」に設定
-    logger.setLevel(logging.INFO)
+    # logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     # 作成したハンドラー（ログ出力先を制御するオブジェクト）を、
     # ロガー（ログメッセージを実際に生成するオブジェクト）に追加してログ出力の最終設定
@@ -111,13 +113,14 @@ def initialize_retriever():
     
     # RAGの参照先となるデータソースの読み込み
     docs_all = load_data_sources()
+    logger.debug(f"読み込んだドキュメント数:{len(docs_all)}")
 
     # OSがWindowsの場合、Unicode正規化と、cp932（Windows用の文字コード）で表現できない文字を除去
     for doc in docs_all:
         doc.page_content = adjust_string(doc.page_content)
         for key in doc.metadata:
             doc.metadata[key] = adjust_string(doc.metadata[key])
-    
+
     # 埋め込みモデルの用意
     embeddings = OpenAIEmbeddings()
     
@@ -133,11 +136,42 @@ def initialize_retriever():
     # チャンク分割を実施
     splitted_docs = text_splitter.split_documents(docs_all)
 
+    # 【DEBUG】CSVデータの分割内容を確認用に表示
+    logger.debug(f"分割後のドキュメント数:{len(splitted_docs)}")
+    logger.debug(f"分割後のドキュメント取得内容0:{str(splitted_docs[0].page_content[:15])}...")
+    logger.debug(f"分割後のドキュメント取得内容1:{str(splitted_docs[1].page_content[:15])}...")
+    logger.debug(f"分割後のドキュメント取得内容49:{str(splitted_docs[49].page_content[:15])}...")
+    logger.debug(f"分割後のドキュメント取得内容50:{str(splitted_docs[50].page_content[:15])}...")
+    
+    # 分割データから社員名簿データを抽出し、元データから削除
+    employee_list_tmp = []
+    for cnt in range(0, len(splitted_docs)):
+        if "社員名簿.csv" in splitted_docs[cnt].metadata.get('source', ""):
+            employee_list_tmp.append(splitted_docs[cnt])
+    splitted_docs = [docs for docs in splitted_docs if "社員名簿.csv" not in docs.metadata.get('source', "")]
+    logger.debug(f"社員名簿データ抽出・削除後のドキュメント数:{len(splitted_docs)}")
+
+    # 社員名簿データを一つのドキュメントにまとめる
+    employee_list = []
+    try:
+        employee_page_content = "\n".join([str(emp.page_content).replace("\n", " ") for emp in employee_list_tmp])
+        employee_metadata = employee_list_tmp[0].metadata
+        employee_list = Document(page_content=employee_page_content, metadata=employee_metadata)
+        # 【DEBUG】社員名簿データの内容確認
+        logger.debug(f"employee_page_content:{employee_page_content[0:15]}...")
+        logger.debug(f"employee_metadata:{employee_metadata}")
+        logger.debug(f"Type of page_content: {type(employee_page_content)}、Type of metadata: {type(employee_metadata)}、len(employee_page_content): {len(employee_page_content)}")
+    except Exception as e:
+        logger.error(f"社員名簿データの結合に失敗しました。\n{e}")  
+
+    # 元データに社員名簿データを追加
+    splitted_docs.append(employee_list)
+    logger.debug(f"結合後のドキュメント数:{len(splitted_docs)}")
+
     # ベクターストアの作成
     db = Chroma.from_documents(splitted_docs, embedding=embeddings)
 
-    # ベクターストアを検索するRetrieverの作成
-    # st.session_state.retriever = db.as_retriever(search_kwargs={"k": 3})
+    # ベクターストアを検索するRetrieverの作成``
     st.session_state.retriever = db.as_retriever(search_kwargs={"k": ct.SEARCH_KEYWORD_K})
 
 

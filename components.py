@@ -8,6 +8,12 @@
 import streamlit as st
 import utils
 import constants as ct
+# ログ出力を行うためのモジュール
+import logging
+# from initialize import initialize as init
+
+# ログ出力を行うためのロガーの設定
+logger = logging.getLogger(ct.LOGGER_NAME)
 
 
 ############################################################
@@ -126,6 +132,8 @@ def display_conversation_log():
                             else:
                                 # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
                                 st.success(f"{message['content']['main_file_path']} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
+                                logger.debug(f"会話ログの一覧表示:ページNo.{message['content']['main_page_number']} ワード検索に引っかかっただけの可能性あり。")
+                                logger.debug(f"content:{message}")
                         else:
                             st.success(f"{message['content']['main_file_path']}", icon=icon)
                         
@@ -147,6 +155,8 @@ def display_conversation_log():
                                     else:
                                         # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
                                         st.info(f"{sub_choice['source']} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
+                                        logger.debug(f"会話ログの一覧表示:ページNo.{sub_choice['page_number']} ワード検索に引っかかっただけの可能性あり。")
+                                        logger.debug(f"page_content:{sub_choice}")
                                 else:
                                     st.info(f"{sub_choice['source']}", icon=icon)
                     # ファイルのありかの情報が取得できなかった場合、LLMからの回答のみ表示
@@ -183,7 +193,7 @@ def display_search_llm_response(llm_response):
     """
     # LLMからのレスポンスに参照元情報が入っており、かつ「該当資料なし」が回答として返された場合
     if llm_response["context"] and llm_response["answer"] != ct.NO_DOC_MATCH_ANSWER:
-        print(f"【DEBUG】:_/_/_/ if処理：LLMからのレスポンスに参照元情報が入っており、... _/_/_")
+        # print(f"【DEBUG】:_/_/_/ if処理：LLMからのレスポンスに参照元情報が入っており、... _/_/_")
 
         # ==========================================
         # ユーザー入力値と最も関連性が高いメインドキュメントのありかを表示
@@ -207,6 +217,8 @@ def display_search_llm_response(llm_response):
             else:
                 # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
                 st.success(f"{main_file_path} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
+                logger.debug(f"社内文書検索結果:ページNo.{main_page_number} ワード検索に引っかかっただけの可能性あり。")
+                logger.debug(f"page_content:{llm_response['context'][0].page_content}")
         else:
             # 「メインドキュメントのファイルパス」を表示
             st.success(f"{main_file_path}", icon=icon)
@@ -267,6 +279,8 @@ def display_search_llm_response(llm_response):
                     else:
                         # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
                         st.info(f"{sub_choice['source']} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})", icon=icon)
+                        logger.debug(f"社内文書検索結果:ページNo.{sub_choice['page_number']} ワード検索に引っかかっただけの可能性あり。")
+                        logger.debug(f"page_content:{sub_choice}")
                 else:
                     # 「サブドキュメントのファイルパス」を表示
                     st.info(f"{sub_choice['source']}", icon=icon)
@@ -292,7 +306,7 @@ def display_search_llm_response(llm_response):
     
     # LLMからのレスポンスに、ユーザー入力値と関連性の高いドキュメント情報が入って「いない」場合
     else:
-        print(f"【DEBUG】:_/_/_/ else処理：LLMからのレスポンスに参照元情報が入っており、... _/_/_")
+        # print(f"【DEBUG】:_/_/_/ else処理：LLMからのレスポンスに参照元情報が入っており、... _/_/_")
         # 関連ドキュメントが取得できなかった場合のメッセージ表示
         st.markdown(ct.NO_DOC_MATCH_MESSAGE)
 
@@ -354,6 +368,8 @@ def display_contact_llm_response(llm_response):
                 else:
                     # ページ番号が0の場合は1とし、警告メッセージを付与（ワード検索にひっかかたけの可能性があるため）
                     file_info = f"{file_path} (ページNo.1 ： {ct.NO_DOC_MATCH_WARNING})"
+                    logger.debug(f"社内問い合わせ結果:ページNo.{page_number} ワード検索に引っかかっただけの可能性あり。")
+                    logger.debug(f"page_content:{document.page_content}")
             else:
                 # 「ファイルパス」のみ
                 file_info = f"{file_path}"
